@@ -5,7 +5,7 @@ class TransitionMatrix:
     _precision = None
     _matrix = []
     _links_numbers = []
-    _number_of_pages = None
+    _pages_number = None
 
     def __init__(self, precision=0.001):
         self._precision = precision
@@ -35,7 +35,7 @@ class TransitionMatrix:
 
             page_number += 1
 
-        self._number_of_pages = height
+        self._pages_number = height
         return
 
 
@@ -63,32 +63,32 @@ class TransitionMatrix:
 
 class TransitionProbabilityMatrix:
     _matrix = None
-    _number_of_pages = None
+    _pages_number = None
 
     def __init__(self, tmatrix, d=0.85):
         self._matrix = copy.deepcopy(tmatrix._matrix)
-        self._number_of_pages = tmatrix._number_of_pages
+        self._pages_number = tmatrix._pages_number
 
-        for i in range(self._number_of_pages):
+        for i in range(self._pages_number):
             self._matrix[i][i] = 0.85
             link_number = 0
             for j in range(0, i):
                 link_number += self._matrix[i][j]
-            for j in range(i+1, self._number_of_pages):
+            for j in range(i+1, self._pages_number):
                 link_number += self._matrix[i][j]
 
             if link_number == 0:
-                number = (1 - d) / (self._number_of_pages - 1)
+                number = (1 - d) / (self._pages_number - 1)
                 for j in range(0, i):
                     self._matrix[i][j] = number
-                for j in range(i+1, self._number_of_pages):
+                for j in range(i+1, self._pages_number):
                     self._matrix[i][j] = number
             else:
                 number = (1 - d) / link_number
                 for j in range(0, i):
                     if self._matrix[i][j] == 1:
                         self._matrix[i][j] = number
-                for j in range(i+1, self._number_of_pages):
+                for j in range(i+1, self._pages_number):
                     if self._matrix[i][j] == 1:
                         self._matrix[i][j] = number
 
@@ -104,3 +104,22 @@ class TransitionProbabilityMatrix:
             total_string += "]\n"
 
         return total_string
+
+
+class TransitionList:
+    _tlist = []
+    _pages_number = None
+
+    def __init__(self, tmatrix):
+        matrix = tmatrix._matrix
+        self._pages_number = tmatrix._pages_number
+        self._tlist = [[] for i in range(self._pages_number)]
+
+        for i in range(self._pages_number):
+            for j in range(self._pages_number):
+                if abs(matrix[i][j] - 1.) < 0.001:
+                    self._tlist[i].append(j)
+        return
+
+    def __str__(self):
+        return self._tlist.__str__()
