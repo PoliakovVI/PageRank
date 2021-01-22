@@ -60,7 +60,7 @@ def _calculateComponentsDistance(v1, v2):
     return dist ** 0.5
 
 
-def MarkovChain(tpmatrix, precision=0.001, probability_start_stat_vector=None):
+def MarkovChain(tpmatrix, precision=0.005, probability_start_stat_vector=None):
     __Timer.start("MarkovChain")
     pages_number = tpmatrix._pages_number
     if probability_start_stat_vector is None:
@@ -87,7 +87,7 @@ def MarkovChain(tpmatrix, precision=0.001, probability_start_stat_vector=None):
     return new_stat_vector
 
 
-def PowerMethod(tmatrix, precision=0.001, d=0.85, start_weight_vector=None):
+def PowerMethod(tmatrix, precision=0.01, d=0.85, start_weight_vector=None):
     __Timer.start("PowerMethod")
 
     pages_number = tmatrix._pages_number
@@ -136,7 +136,7 @@ def _compute_pi_vector(vectors_stack):
     return pi_vector
 
 
-def AdaptivePowerMethod(tmatrix, precision=0.001, d=0.85, start_weight_vector=None, extrapolation=False, period=10):
+def AdaptivePowerMethod(tmatrix, precision=0.01, d=0.85, start_weight_vector=None, extrapolation=False, period=10):
     addition_name = ""
     if extrapolation:
         addition_name = "Extrapolating"
@@ -194,6 +194,10 @@ def AdaptivePowerMethod(tmatrix, precision=0.001, d=0.85, start_weight_vector=No
     return new_stat_vector
 
 
+def ExtrapolatingAdaptivePowerMethod(tmatrix, precision=0.01, d=0.85, start_weight_vector=None, period=10):
+    return AdaptivePowerMethod(tmatrix, precision=precision, d=d, start_weight_vector=start_weight_vector,
+                               extrapolation=True, period=period)
+
 # Monte Carlo methods
 
 
@@ -211,7 +215,7 @@ def _simulate_run(tlist, start_page, d, precision=100):
     return
 
 
-def EndpointRandomStartMonteCarloMethod(tlist, d=0.85, order="square", iterations=1):
+def EndpointRandomStartMonteCarloMethod(tlist, d=0.85, order="linear", iterations=1):
     pages_number = tlist._pages_number
     if order == "linear":
         N = pages_number
@@ -313,7 +317,7 @@ def StoppingCompletePathMonteCarloMethod(tlist, d=0.85, iterations=5):
     return stat_vector
 
 
-def RandomStartStoppingCompletePathMonteCarloMethod(tlist, d=0.85, order="square", iterations=1):
+def RandomStartStoppingCompletePathMonteCarloMethod(tlist, d=0.85, order="linear", iterations=1):
     pages_number = tlist._pages_number
     if order == "linear":
         N = pages_number

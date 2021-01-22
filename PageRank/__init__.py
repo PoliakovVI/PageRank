@@ -1,1 +1,1 @@
-__all__ = ["TransitionMatrix", "CountMethods"]
+__all__ = ["TransitionMatrix", "ComputingMethods.py", "Generators", "Test"]

@@ -1,67 +1,42 @@
 import PageRank.TransitionMatrix as tx
-import PageRank.CountMethods as md
+import PageRank.ComputingMethods as md
+import PageRank.Generators as gen
+import PageRank.Test as t
 import time
+import random
 
 
-def print_range(arr, names):
-    new_one = []
-    for i in range(len(arr)):
-        new_one.append((arr[i], names[i]))
-    result = sorted(new_one, reverse=True)
-    for item in result:
-        print(item[1], "  ", item[0])
+#t.CompleteTest()
+#exit(0)
 
-def run_and_print(method, names, matrix, precision):
-    result = method(matrix, precision=precision)
-    print_range(result, names)
-    return
-
-
+#gen.TreeGenerator(output="file.txt", levels=12)
+#exit(0)
 tm = tx.TransitionMatrix()
-tm.read_from_txt("matrix.txt")
-
+tm.read_from_txt("file.txt")
 tpm = tx.TransitionProbabilityMatrix(tm)
-
 tl = tx.TransitionList(tm)
 
-print(tm)
-print(tm._links_numbers)
-print()
-print(tpm)
-print()
-print(tl)
+# print("Methods time {}:".format(tm._pages_number))
+# for method in t.__methods:
+#     method_type = t.__methods_data[method.__name__]
+#
+#     if method_type == "tm":
+#         data = tm
+#     elif method_type == "tl":
+#         data = tx.TransitionList(tm)
+#     elif method_type =="tpm":
+#         data = tx.TransitionProbabilityMatrix(tm)
+#
+#     method(data)
+#     print(method.__name__, " has finished!")
+# print(md.methods_run_information["spent time"])
 
-names=['A', 'B', 'C', 'D', 'E', 'F', 'P1', 'P2', 'P3', 'P4', 'P5']
-precision = 0.0001
-
-print("MarkovChain")
-run_and_print(md.MarkovChain, names, tpm, precision)
-
-print("PowerMethod")
-run_and_print(md.PowerMethod, names, tm, precision)
-
-print("AdaptivePowerMethod")
-run_and_print(md.AdaptivePowerMethod, names, tm, precision)
-
-print("ExtrapolatingAdaptivePowerMethod")
-print_range(md.AdaptivePowerMethod(tm, precision, extrapolation=True), names)
-
-print("EndpointRandomStartMonteCarloMethod, linear")
-print_range(md.EndpointRandomStartMonteCarloMethod(tl, order="linear", iterations=1), names)
-
-print("EndpointRandomStartMonteCarloMethod, square")
-print_range(md.EndpointRandomStartMonteCarloMethod(tl, order="square", iterations=1), names)
-
-print("EndpointCyclicStartMonteCarloMethod")
-print_range(md.EndpointCyclicStartMonteCarloMethod(tl), names)
-
-print("CompletePathMonteCarloMethod")
-print_range(md.CompletePathMonteCarloMethod(tl, iterations=3), names)
-
-print("StoppingCompletePathMonteCarloMethod")
-print_range(md.StoppingCompletePathMonteCarloMethod(tl, iterations=3), names)
-
-print("RandomStartStoppingCompletePathMonteCarloMethod")
-print_range(md.RandomStartStoppingCompletePathMonteCarloMethod(tl, order="linear", iterations=3), names)
-
-print(md.methods_run_information)
+# {'MarkovChain': 1.015460729598999,
+#  'PowerMethod': 47.517489433288574,
+#  'AdaptivePowerMethod': 11.127044916152954,
+#  'ExtrapolatingAdaptivePowerMethod': 10.561493396759033,
+#  'EndpointRandomStartMonteCarloMethod:linear': 0.060633182525634766,
+#  'EndpointCyclicStartMonteCarloMethod': 0.18993282318115234,
+#  'CompletePathMonteCarloMethod': 0.1920452117919922,
+#  'StoppingCompletePathMonteCarloMethod': 0.20283770561218262,
+#  'RandomStartStoppingCompletePathMonteCarloMethod': 0.049947261810302734}
