@@ -30,7 +30,7 @@ def TreeGenerator(output="return", levels=3, print_res=False, sep=';'):
 
         pages_number += new_pages_number
         prev_pages_number = new_pages_number
-        print(level, pages_number)
+        #print(level, pages_number)
 
     if output == "return":
         return tlist
@@ -39,8 +39,8 @@ def TreeGenerator(output="return", levels=3, print_res=False, sep=';'):
             id = 0
             for row in tlist:
                 id += 1
-                if id % 1000 == 0:
-                    print(id)
+                #if id % 1000 == 0:
+                    #print(id)
                 separator = ""
                 line = ""
                 current_position = 0
@@ -133,3 +133,51 @@ def SeparatedLevelsTreeGenerator(output="return", levels=3, print_res=False, sep
                     separator = sep
 
                 file.write(line + "\n")
+
+
+def BinaryTreeGenerator(output="return", levels=5, sep=';'):
+    tlist = [[], ]
+    node_levels = [0, ]
+    current_level_nodes = [0]
+    next_level_nodes = []
+    next_node_number = 1
+
+    for level in range(1, levels):
+        for node in current_level_nodes:
+            tlist.append([node])
+            node_levels.append(level)
+            next_level_nodes.append(next_node_number)
+            next_node_number += 1
+
+            tlist.append([node])
+            node_levels.append(level)
+            next_level_nodes.append(next_node_number)
+            next_node_number += 1
+
+        current_level_nodes = next_level_nodes
+        next_level_nodes = []
+
+    generators_information["BinaryTreeGenerator"] = {
+        "levels": node_levels
+    }
+
+    pages_number = len(tlist)
+
+    if output == "return":
+        return tlist
+    else:
+        with open(output, "w") as file:
+            id = 0
+            for row in tlist:
+                id += 1
+                #if id % 1000 == 0:
+                    #print(id)
+                separator = ""
+                line = ""
+                current_position = 0
+                for item in row:
+                    line += "0;" * (item - current_position) + "1;"
+                    current_position = item + 1
+                line += "0;" * (pages_number - current_position)
+
+                file.write(line[0:-1] + "\n")

@@ -136,7 +136,7 @@ def _compute_pi_vector(vectors_stack):
     return pi_vector
 
 
-def AdaptivePowerMethod(tmatrix, precision=0.01, d=0.85, start_weight_vector=None, extrapolation=False, period=10):
+def AdaptivePowerMethod(tmatrix, precision=0.001, d=0.85, start_weight_vector=None, extrapolation=False, period=10):
     addition_name = ""
     if extrapolation:
         addition_name = "Extrapolating"
@@ -194,7 +194,7 @@ def AdaptivePowerMethod(tmatrix, precision=0.01, d=0.85, start_weight_vector=Non
     return new_stat_vector
 
 
-def ExtrapolatingAdaptivePowerMethod(tmatrix, precision=0.01, d=0.85, start_weight_vector=None, period=10):
+def ExtrapolatingAdaptivePowerMethod(tmatrix, precision=0.001, d=0.85, start_weight_vector=None, period=10):
     return AdaptivePowerMethod(tmatrix, precision=precision, d=d, start_weight_vector=start_weight_vector,
                                extrapolation=True, period=period)
 
@@ -337,3 +337,7 @@ def RandomStartStoppingCompletePathMonteCarloMethod(tlist, d=0.85, order="linear
     __Timer.end()
     methods_run_information['iterations']['RandomStartStoppingCompletePathMonteCarloMethod'] = iterations
     return stat_vector
+
+
+def CompleteFunction():
+    pass
