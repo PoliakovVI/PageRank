@@ -60,17 +60,22 @@ class TransitionMatrix:
 
         return total_string
 
+    def __len__(self):
+        return len(self._matrix)
+
 
 class TransitionProbabilityMatrix:
     _matrix = None
     _pages_number = None
+    _d = None
 
     def __init__(self, tmatrix, d=0.85):
+        self._d = d
         self._matrix = copy.deepcopy(tmatrix._matrix)
         self._pages_number = tmatrix._pages_number
 
         for i in range(self._pages_number):
-            self._matrix[i][i] = 0.85
+            self._matrix[i][i] = d
             link_number = 0
             for j in range(0, i):
                 link_number += self._matrix[i][j]
@@ -93,6 +98,9 @@ class TransitionProbabilityMatrix:
                         self._matrix[i][j] = number
 
         return
+
+    def __len__(self):
+        return len(self._matrix)
 
     def __str__(self):
         total_string = ""
@@ -123,3 +131,6 @@ class TransitionList:
 
     def __str__(self):
         return self._tlist.__str__()
+
+    def __len__(self):
+        return len(self._tlist)

@@ -32,6 +32,10 @@ def TreeGenerator(output="return", levels=3, print_res=False, sep=';'):
         prev_pages_number = new_pages_number
         #print(level, pages_number)
 
+    generators_information["SeparatedLevelsTreeGenerator"] = {
+        "pages number": len(tlist)
+    }
+
     if output == "return":
         return tlist
     else:
@@ -113,7 +117,7 @@ def SeparatedLevelsTreeGenerator(output="return", levels=3, print_res=False, sep
 
         pages_number += new_pages_number
         prev_pages_number = new_pages_number
-
+    generators_information["SeparatedLevelsTreeGenerator"]["number"] = pages_number
     if output == "return":
         return tlist
     else:

@@ -29,7 +29,7 @@ __methods = [
 __true_tests = ["test1.txt", "test2.txt", "test3.txt"]
 
 
-def __get_method_result(file, method, method_opts={}):
+def __get_worked_method_object(file, method, method_opts={}):
     tm = TransitionMatrix.TransitionMatrix()
     tm.read_from_txt(file)
     method_type = __methods_data[method.__name__]
@@ -42,12 +42,16 @@ def __get_method_result(file, method, method_opts={}):
         data = TransitionMatrix.TransitionProbabilityMatrix(tm)
     else:
         raise Exception("Unknown method")
+    method_object = method(data)
+    try:
+        method_object.stopping_run(precision=0.01)
+    except Exception:
+        method_object.iterating_run(iterations=1)
+    return method_object
 
-    return method(data, **method_opts)
 
-
-def positionTest(result, true_result):
-    result_pages = list(
+def __get_sort_pages(result):
+    return list(
         map(
             lambda x: x[1],
             sorted(
@@ -63,21 +67,11 @@ def positionTest(result, true_result):
         )
     )
 
-    true_pages = list(
-        map(
-            lambda x: x[1],
-            sorted(
-                sorted(
-                    [
-                        (true_result[i], i) for i in range(len(true_result))
-                    ],
-                    key=lambda x: x[1]
-                ),
-                key=lambda x: x[0],
-                reverse=True
-            )
-        )
-    )
+
+def positionTest(result, true_result):
+    result_pages = __get_sort_pages(result)
+
+    true_pages = __get_sort_pages(true_result)
 
     ################
     #for i in range(len(true_pages)):
@@ -94,37 +88,8 @@ def positionTest(result, true_result):
 
 
 def sequenceTest(result, true_result):
-    result_pages = list(
-        map(
-            lambda x: x[1],
-            sorted(
-                sorted(
-                    [
-                        (result[i], i) for i in range(len(result))
-                    ],
-                    key=lambda x: x[1]
-                ),
-                key=lambda x: x[0],
-                reverse=True
-            )
-        )
-    )
-    true_pages = list(
-        map(
-            lambda x: x[1],
-            sorted(
-                sorted(
-                    [
-                        (true_result
-                         [i], i) for i in range(len(true_result))
-                    ],
-                    key=lambda x: x[1]
-                ),
-                key=lambda x: x[0],
-                reverse=True
-            )
-        )
-    )
+    result_pages = __get_sort_pages(result)
+    true_pages = __get_sort_pages(true_result)
 
     i = 0
     pages_number = len(result)
@@ -151,16 +116,24 @@ def __normalize(vector):
     return normalized_vector
 
 
+def __calculate_l1_norm(lst1, lst2):
+    l1_sum = 0
+    for i in range(len(lst1)):
+        l1_sum += abs(lst1[i] - lst2[i])
+    return l1_sum
+
+
 def vectorTest(result, true_result):
     result = __normalize(result)
     true_result = __normalize(true_result)
-    return ComputingMethods._calculateComponentsDistance(true_result, result)
+    return __calculate_l1_norm(true_result, result)
 
 
 def levelTest(method, method_opts={}, levels=5, file=__LEVEL_TEST_FILE):
     Generators.BinaryTreeGenerator(output=file, levels=levels)
 
-    result = __get_method_result(file, method, method_opts)
+    method_object = __get_worked_method_object(file, method, method_opts)
+    result = method_object._stat_vector
 
     pages_levels = Generators.generators_information['BinaryTreeGenerator']['levels']
 
@@ -183,37 +156,9 @@ def levelTest(method, method_opts={}, levels=5, file=__LEVEL_TEST_FILE):
 
 
 def distanceTest(result, true_result):
-    result_pages = list(
-        map(
-            lambda x: x[1],
-            sorted(
-                sorted(
-                    [
-                        (result[i], i) for i in range(len(result))
-                    ],
-                    key=lambda x: x[1]
-                ),
-                key=lambda x: x[0],
-                reverse=True
-            )
-        )
-    )
+    result_pages = __get_sort_pages(result)
+    true_pages = __get_sort_pages(true_result)
 
-    true_pages = list(
-        map(
-            lambda x: x[1],
-            sorted(
-                sorted(
-                    [
-                        (true_result[i], i) for i in range(len(true_result))
-                    ],
-                    key=lambda x: x[1]
-                ),
-                key=lambda x: x[0],
-                reverse=True
-            )
-        )
-    )
     sum_distance = 0
     for i in range(len(true_pages)):
         item = true_pages[i]
@@ -225,33 +170,82 @@ def distanceTest(result, true_result):
     return sum_distance / len(true_pages)
 
 
+def __get_matches_percentage(set1, set2):
+    l_base = len(set1)
+    l_new = len(set1.union(set2))
+    return 2. - l_new / l_base
+
+
+def topTest(result, true_result, top=None):
+    if len(result) == 0:
+        return
+
+    if top is None:
+        top = len(result)
+
+    result_pages = __get_sort_pages(result)
+    true_pages = __get_sort_pages(true_result)
+
+    result_set = set()
+    true_set = set()
+
+    test = []
+
+    for i in range(top):
+        result_set.add(result_pages[i])
+        true_set.add(true_pages[i])
+        test.append(__get_matches_percentage(result_set, true_set))
+
+    return test
+
+
+def ComparingTest(result, baseline_result):
+    pt_res = positionTest(result, baseline_result)
+    st_res = sequenceTest(result, baseline_result)
+    vt_res = vectorTest(result, baseline_result)
+    dt_res = distanceTest(result, baseline_result)
+
+    print("Comparing test:")
+    print("    Position test: {:.2f}%".format(pt_res * 100))
+    print("    Sequence test: {:.2f}%".format(st_res * 100))
+    print("    Vector test: {:.3f}".format(vt_res))
+    print("    Distance test: {:.2f}".format(dt_res))
+    print()
+
+
 def CompleteTest():
     for method in __methods:
         print("========== {} testing ==========".format(method.__name__))
 
         test_number = 0
+        lt_res = levelTest(method)
+        print("    Level test: {:.2f}%".format(lt_res * 100))
+
         for file in __true_tests:
             test_number += 1
 
             true_file = "PageRank/_tests/true_" + file
             file = "PageRank/_tests/" + file
-            start_time = time.time()
-            result = __get_method_result(file, method)
-            all_time = time.time() - start_time
+            method_object = __get_worked_method_object(file, method)
             with open(true_file, "r") as f:
                 true_result = list(map(float, f.readline().split()))
 
-            pt_res = positionTest(result, true_result)
-            st_res = sequenceTest(result, true_result)
-            vt_res = vectorTest(result, true_result)
-            lt_res = levelTest(method)
-            dt_res = distanceTest(result, true_result)
+            pt_res = positionTest(method_object._stat_vector, true_result)
+            st_res = sequenceTest(method_object._stat_vector, true_result)
+            vt_res = vectorTest(method_object._stat_vector, true_result)
+            dt_res = distanceTest(method_object._stat_vector, true_result)
+            tt_res = topTest(method_object._stat_vector, true_result, top=5)
+
+            if method_object._stopping_run_time is not None:
+                all_time = method_object._stopping_run_time
+            else:
+                all_time = method_object._iterating_run_time
 
             print("Test number {}:".format(test_number))
             print("    Position test: {:.2f}%".format(pt_res * 100))
             print("    Sequence test: {:.2f}%".format(st_res * 100))
             print("    Vector test: {:.3f}".format(vt_res))
-            print("    Level test: {:.2f}%".format(lt_res * 100))
             print("    Distance test: {:.2f}".format(dt_res))
+            print("    Top test: {}".format(tt_res))
             print("  method worked:", all_time)
             print()

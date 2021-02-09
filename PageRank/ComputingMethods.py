@@ -10,26 +10,13 @@ numbers_after_point = 30
 
 
 class Timer:
-    _run_info_dict = None
-    _start_time = None
-    _name = None
-
-    def __init__(self, run_info_dict):
-        self._run_info_dict = run_info_dict
-        return
-
-    def start(self, name):
-        self._name = name
+    def start(self):
         self._start_time = time.time()
         return
 
-    def end(self):
+    def finish(self):
         end_time = time.time()
-        self._run_info_dict[self._name] = end_time - self._start_time
-        return
-
-
-__Timer = Timer(methods_run_information["spent time"])
+        return end_time - self._start_time
 
 
 def _toFixed(number, digits=0):
@@ -60,64 +47,100 @@ def _calculateComponentsDistance(v1, v2):
     return dist ** 0.5
 
 
-def MarkovChain(tpmatrix, precision=0.005, probability_start_stat_vector=None):
-    __Timer.start("MarkovChain")
-    pages_number = tpmatrix._pages_number
-    if probability_start_stat_vector is None:
-        previous_stat_vector = [1 / pages_number for i in range(pages_number)]
-    else:
-        if abs(sum(probability_start_stat_vector) - 1) > 0.0001:
-            raise Exception("Wrong parameter 'probability_start_stat_vector': sum does not equal ot 1")
+class MarkovChain:
+    _timer = Timer()
+    _iterating_run_time = None
+    _stopping_run_time = None
+    _stat_vector = None
 
-        previous_stat_vector = probability_start_stat_vector
+    def __init__(self, tpmatrix, probability_start_stat_vector=None):
+        self._d = tpmatrix._d
+        pages_number = len(tpmatrix)
+        self._matrix = tpmatrix
+        if probability_start_stat_vector is None:
+            self._stat_vector = [1 / pages_number for i in range(pages_number)]
+        else:
+            accuracy = 0.0001
+            if abs(sum(probability_start_stat_vector) - 1) > accuracy:
+                raise Exception("Wrong parameter 'probability_start_stat_vector': "
+                                "sum does not equal ot 1. acc: {}".format(accuracy))
 
-    iteration = 0
-    while True:
-        iteration += 1
-        new_stat_vector = _vectorSquareMatrixMultiplication(previous_stat_vector,
-                                                            tpmatrix._matrix)
-        if _calculateComponentsDistance(previous_stat_vector, new_stat_vector) < precision:
-            break
+            self._stat_vector = probability_start_stat_vector
+        return
 
-        previous_stat_vector = new_stat_vector
+    def _iteration(self):
+        self._old_stat_vector = self._stat_vector
+        self._stat_vector = _vectorSquareMatrixMultiplication(self._stat_vector,
+                                                            self._matrix._matrix)
+        return
 
-    __Timer.end()
+    def iterating_run(self, iterations):
+        self._timer.start()
+        for i in range(iterations):
+            self._iteration()
+        self._srun_iteraions = iterations
+        self._iterating_run_time = self._timer.finish()
+        return
 
-    methods_run_information['iterations']['MarkovChain'] = iteration
-    return new_stat_vector
+    def stopping_run(self, precision=0.01):
+        self._timer.start()
+        self._srun_iteraions = 0
+        while True:
+            self._iteration()
+            self._srun_iteraions += 1
+            if _calculateComponentsDistance(self._stat_vector, self._old_stat_vector) < precision:
+                break
+        self._stopping_run_time = self._timer.finish()
+        return
 
 
-def PowerMethod(tmatrix, precision=0.01, d=0.85, start_weight_vector=None):
-    __Timer.start("PowerMethod")
+class PowerMethod:
+    _timer = Timer()
+    _iterating_run_time = None
+    _stopping_run_time = None
+    _stat_vector = None
 
-    pages_number = tmatrix._pages_number
-    if start_weight_vector is None:
-        previous_stat_vector = [1 for i in range(pages_number)]
-    else:
-        previous_stat_vector = start_weight_vector
+    def __init__(self, tmatrix, start_stat_vector=None, d=0.85):
+        pages_number = len(tmatrix)
+        self._matrix = tmatrix
+        self._d = d
+        if start_stat_vector is None:
+            self._stat_vector = [1 for i in range(pages_number)]
+        else:
+            self._stat_vector = start_stat_vector
+        return
 
-    new_stat_vector = previous_stat_vector[:]
-
-    iteration = 0
-    while True:
-        iteration += 1
+    def _iteration(self):
+        self._old_stat_vector = self._stat_vector[:]
+        pages_number = len(self._matrix)
         for page_num in range(pages_number):
             sum_weight = 0
             for linking_page in range(pages_number):
-                if abs(tmatrix._matrix[linking_page][page_num] - 1.) < 0.0001:
-                    sum_weight += previous_stat_vector[linking_page] / tmatrix._links_numbers[linking_page]
+                if abs(self._matrix._matrix[linking_page][page_num] - 1.) < 0.0001:
+                    sum_weight += self._old_stat_vector[linking_page] / \
+                                  self._matrix._links_numbers[linking_page]
 
-            new_stat_vector[page_num] = (1 - d) + d * (sum_weight)
-        dist = _calculateComponentsDistance(previous_stat_vector, new_stat_vector)
-        if dist < precision:
-            break
+            self._stat_vector[page_num] = (1 - self._d) + self._d * (sum_weight)
+        return
 
-        previous_stat_vector = new_stat_vector[:]
+    def iterating_run(self, iterations):
+        self._timer.start()
+        for i in range(iterations):
+            self._iteration()
+        self._srun_iteraions = iterations
+        self._iterating_run_time = self._timer.finish()
+        return
 
-    __Timer.end()
-
-    methods_run_information['iterations']['PowerMethod'] = iteration
-    return new_stat_vector
+    def stopping_run(self, precision=0.01):
+        self._timer.start()
+        self._srun_iteraions = 0
+        while True:
+            self._iteration()
+            self._srun_iteraions += 1
+            if _calculateComponentsDistance(self._stat_vector, self._old_stat_vector) < precision:
+                break
+        self._stopping_run_time = self._timer.finish()
+        return
 
 
 def _compute_pi_vector(vectors_stack):
@@ -136,67 +159,124 @@ def _compute_pi_vector(vectors_stack):
     return pi_vector
 
 
-def AdaptivePowerMethod(tmatrix, precision=0.001, d=0.85, start_weight_vector=None, extrapolation=False, period=10):
-    addition_name = ""
-    if extrapolation:
-        addition_name = "Extrapolating"
+class AdaptivePowerMethod:
+    _timer = Timer()
+    _iterating_run_time = None
+    _stopping_run_time = None
+    _stat_vector = None
+    _stat_vectors_stack = []
 
-    __Timer.start(addition_name + "AdaptivePowerMethod")
+    def __init__(self, tmatrix, start_stat_vector=None, d=0.85):
+        pages_number = len(tmatrix)
+        self._need_to_recount_pages = [True for i in range(pages_number)]
+        self._matrix = tmatrix
+        self._need_to_recount_pages_number = len(self._matrix)
+        self._d = d
+        if start_stat_vector is None:
+            self._stat_vector = [1 for i in range(pages_number)]
+        else:
+            self._stat_vector = start_stat_vector
+        return
 
-    pages_number = tmatrix._pages_number
-    if start_weight_vector is None:
-        previous_stat_vector = [1 for i in range(pages_number)]
-    else:
-        previous_stat_vector = start_weight_vector
+    def _iteration(self, with_extrapolation=False):
+        pages_number = len(self._matrix)
+        self._old_stat_vector = self._stat_vector[:]
 
-    number_of_counted = pages_number
-    need_to_recount_pages = [True for i in range(pages_number)]
-
-    new_stat_vector = previous_stat_vector[:]
-
-    if extrapolation:
-        stat_vectors_stack = []
-        stat_vectors_stack.append(previous_stat_vector)
-
-    iteration = 0
-    while True:
-        iteration += 1
         for page_num in range(pages_number):
-            if not need_to_recount_pages[page_num]:
+            if not self._need_to_recount_pages[page_num]:
                 continue
 
             sum_weight = 0
             for linking_page in range(pages_number):
-                if abs(tmatrix._matrix[linking_page][page_num] - 1.) < 0.0001:
-                    sum_weight += previous_stat_vector[linking_page] / tmatrix._links_numbers[linking_page]
+                if abs(self._matrix._matrix[linking_page][page_num] - 1.) < 0.0001:
+                    sum_weight += self._old_stat_vector[linking_page] / \
+                                  self._matrix._links_numbers[linking_page]
 
-            new_stat_vector[page_num] = (1 - d) + d * (sum_weight)
+            self._stat_vector[page_num] = (1 - self._d) + self._d * (sum_weight)
 
-        if extrapolation:
-            stat_vectors_stack.append(previous_stat_vector)
-            if iteration % period == 0:
-                new_stat_vector = _compute_pi_vector(stat_vectors_stack)
+        self._stat_vectors_stack.append(self._old_stat_vector)
+        if with_extrapolation:
+            new_stat_vector = _compute_pi_vector(self._stat_vectors_stack)
+        return
 
-        for page_num in range(pages_number):
-            if abs(new_stat_vector[page_num] - previous_stat_vector[page_num]) < precision and \
-                    need_to_recount_pages[page_num]:
-                need_to_recount_pages[page_num] = False
-                number_of_counted -= 1
+    def iterating_run(self, iterations, extrapolation_period=None):
+        self._timer.start()
 
-        if number_of_counted == 0:
-            break
+        need_extrapolation = False
+        if extrapolation_period is not None:
+            need_extrapolation = True
+            if extrapolation_period < 3:
+                raise Exception("extrapolation_period cant be less then 3")
 
-        previous_stat_vector = new_stat_vector[:]
+        for i in range(iterations):
+            if need_extrapolation and i % extrapolation_period == 0:
+                self._iteration(with_extrapolation=True)
+                continue
+            self._iteration()
 
-    __Timer.end()
+        self._srun_iteraions = iterations
+        self._iterating_run_time = self._timer.finish()
+        return
 
-    methods_run_information['iterations'][addition_name + 'AdaptivePowerMethod'] = iteration
-    return new_stat_vector
+    def stopping_run(self, precision=0.01, extrapolation_period=None):
+        self._timer.start()
+
+        need_extrapolation = False
+        if extrapolation_period is not None:
+            need_extrapolation = True
+            if extrapolation_period < 3:
+                raise Exception("extrapolation_period cant be less then 3")
+
+        self._srun_iteraions = 0
+        while True:
+            if need_extrapolation and (self._srun_iteraions + 1) % extrapolation_period == 0:
+                self._iteration(with_extrapolation=True)
+            else:
+                self._iteration()
+
+            self._srun_iteraions += 1
+
+            for page_num in range(len(self._matrix)):
+                if abs(self._stat_vector[page_num] - self._old_stat_vector[page_num]) < precision and \
+                        self._need_to_recount_pages[page_num]:
+                    self._need_to_recount_pages[page_num] = False
+                    self._need_to_recount_pages_number -= 1
+
+            if self._need_to_recount_pages_number == 0:
+                break
+
+        self._stopping_run_time = self._timer.finish()
+
+        self._need_to_recount_pages_number = len(self._matrix)
+        self._need_to_recount_pages = [True for i in range(len(self._matrix))]
+        return
 
 
-def ExtrapolatingAdaptivePowerMethod(tmatrix, precision=0.001, d=0.85, start_weight_vector=None, period=10):
-    return AdaptivePowerMethod(tmatrix, precision=precision, d=d, start_weight_vector=start_weight_vector,
-                               extrapolation=True, period=period)
+class ExtrapolatingAdaptivePowerMethod:
+    _iterating_run_time = None
+    _stopping_run_time = None
+    _stat_vector = None
+
+    def __init__(self, tmatrix, start_stat_vector=None, d=0.85):
+        self._APmethod = AdaptivePowerMethod(tmatrix, start_stat_vector, d)
+        return
+
+    def _iteration(self, with_extrapolation=False):
+        raise Exception("Cant be used for that: ExtrapolatingAdaptivePowerMethod")
+        return
+
+    def iterating_run(self, iterations, extrapolation_period=10):
+        self._APmethod.iterating_run(iterations, extrapolation_period)
+        self._iterating_run_time = self._APmethod._iterating_run_time
+        self._stat_vector = self._APmethod._stat_vector
+        return
+
+    def stopping_run(self, precision=0.01, extrapolation_period=10):
+        self._APmethod.stopping_run(precision, extrapolation_period)
+        self._stopping_run_time = self._APmethod._stopping_run_time
+        self._stat_vector = self._APmethod._stat_vector
+        return
+
 
 # Monte Carlo methods
 
@@ -215,43 +295,77 @@ def _simulate_run(tlist, start_page, d, precision=100):
     return
 
 
-def EndpointRandomStartMonteCarloMethod(tlist, d=0.85, order="linear", iterations=1):
-    pages_number = tlist._pages_number
-    if order == "linear":
-        N = pages_number
-    elif order == "square":
-        N = pages_number ** 2
-    else:
-        raise ValueError("Wrong order parameter")
+class EndpointRandomStartMonteCarloMethod:
+    _timer = Timer()
+    _iterating_run_time = None
+    _stopping_run_time = None
 
-    __Timer.start("EndpointRandomStartMonteCarloMethod:" + order)
+    def __init__(self, tlist, d=0.85):
+        self._d = d
+        pages_number = len(tlist)
+        self._matrix = tlist
+        self._stat_vector = [0 for i in range(pages_number)]
+        return
 
-    stat_vector = [0 for i in range(pages_number)]
+    def _iteration(self):
+        pages_number = len(self._matrix)
+        for i in range(self._N):
+            start_page = random.randint(0, pages_number - 1)
+            self._stat_vector[_simulate_run(self._matrix, start_page, self._d)] += 1
+        return
 
-    for i in range(N * iterations):
-        start_page = random.randint(0, pages_number - 1)
-        stat_vector[_simulate_run(tlist, start_page, d)] += 1
+    def iterating_run(self, iterations, order="linear"):
+        pages_number = len(self._matrix)
+        if order == "linear":
+            self._N = pages_number
+        elif order == "square":
+            self._N = pages_number ** 2
+        else:
+            raise ValueError("Wrong order parameter")
 
-    __Timer.end()
+        self._timer.start()
+        for i in range(iterations):
+            self._iteration()
+        self._srun_iteraions = iterations
+        self._iterating_run_time = self._timer.finish()
+        return
 
-    methods_run_information['iterations']['EndpointRandomStartMonteCarloMethod:' + order] = iterations
-    return stat_vector
+    def stopping_run(self, precision=0.01, order="linear"):
+        raise Exception("No available implementation")
+        return
 
 
-def EndpointCyclicStartMonteCarloMethod(tlist, d=0.85, iterations=5):
-    pages_number = tlist._pages_number
+class EndpointCyclicStartMonteCarloMethod:
+    _timer = Timer()
+    _iterating_run_time = None
+    _stopping_run_time = None
 
-    __Timer.start("EndpointCyclicStartMonteCarloMethod")
+    def __init__(self, tlist, d=0.85):
+        self._d = d
+        pages_number = len(tlist)
+        self._matrix = tlist
+        self._stat_vector = [0 for i in range(pages_number)]
+        return
 
-    stat_vector = [0 for i in range(pages_number)]
+    def _iteration(self):
+        pages_number = len(self._matrix)
+        for page_number in range(pages_number):
+            for iter in range(self._m):
+                self._stat_vector[_simulate_run(self._matrix, page_number, self._d)] += 1
+        return
 
-    for page_number in range(pages_number):
-        for iter in range(iterations):
-            stat_vector[_simulate_run(tlist, page_number, d)] += 1
+    def iterating_run(self, iterations, m=3):
+        self._m = m
+        self._timer.start()
+        for i in range(iterations):
+            self._iteration()
+        self._srun_iteraions = iterations
+        self._iterating_run_time = self._timer.finish()
+        return
 
-    __Timer.end()
-    methods_run_information['iterations']['EndpointCyclicStartMonteCarloMethod'] = iterations
-    return stat_vector
+    def stopping_run(self, precision=0.01, m=3):
+        raise Exception("No available implementation")
+        return
 
 
 def _simulate_complete_run(tlist, stat_vector, start_page, d, precision=100):
@@ -269,20 +383,37 @@ def _simulate_complete_run(tlist, stat_vector, start_page, d, precision=100):
     return
 
 
-def CompletePathMonteCarloMethod(tlist, d=0.85, iterations=5):
-    pages_number = tlist._pages_number
+class CompletePathMonteCarloMethod:
+    _timer = Timer()
+    _iterating_run_time = None
+    _stopping_run_time = None
 
-    __Timer.start("CompletePathMonteCarloMethod")
+    def __init__(self, tlist, d=0.85):
+        self._d = d
+        pages_number = len(tlist)
+        self._matrix = tlist
+        self._stat_vector = [0 for i in range(pages_number)]
+        return
 
-    stat_vector = [0 for i in range(pages_number)]
+    def _iteration(self):
+        pages_number = len(self._matrix)
+        for page_number in range(pages_number):
+            for iter in range(self._m):
+                _simulate_complete_run(self._matrix, self._stat_vector, page_number, self._d)
+        return
 
-    for page_number in range(pages_number):
-        for iter in range(iterations):
-            _simulate_complete_run(tlist, stat_vector, page_number, d)
+    def iterating_run(self, iterations, m=3):
+        self._m = m
+        self._timer.start()
+        for i in range(iterations):
+            self._iteration()
+        self._srun_iteraions = iterations
+        self._iterating_run_time = self._timer.finish()
+        return
 
-    __Timer.end()
-    methods_run_information['iterations']['CompletePathMonteCarloMethod'] = iterations
-    return stat_vector
+    def stopping_run(self, precision=0.01, m=3):
+        raise Exception("No available implementation")
+        return
 
 
 def _stopping_simulate_complete_run(tlist, stat_vector, start_page, d, precision=100):
@@ -301,43 +432,74 @@ def _stopping_simulate_complete_run(tlist, stat_vector, start_page, d, precision
     return
 
 
-def StoppingCompletePathMonteCarloMethod(tlist, d=0.85, iterations=5):
-    pages_number = tlist._pages_number
+class StoppingCompletePathMonteCarloMethod:
+    _timer = Timer()
+    _iterating_run_time = None
+    _stopping_run_time = None
 
-    __Timer.start("StoppingCompletePathMonteCarloMethod")
+    def __init__(self, tlist, d=0.85):
+        self._d = d
+        pages_number = len(tlist)
+        self._matrix = tlist
+        self._stat_vector = [0 for i in range(pages_number)]
+        return
 
-    stat_vector = [0 for i in range(pages_number)]
+    def _iteration(self):
+        pages_number = len(self._matrix)
+        for page_number in range(pages_number):
+            for iter in range(self._m):
+                _stopping_simulate_complete_run(self._matrix, self._stat_vector, page_number, self._d)
+        return
 
-    for page_number in range(pages_number):
-        for iter in range(iterations):
-            _stopping_simulate_complete_run(tlist, stat_vector, page_number, d)
+    def iterating_run(self, iterations, m=3):
+        self._m = m
+        self._timer.start()
+        for i in range(iterations):
+            self._iteration()
+        self._srun_iteraions = iterations
+        self._iterating_run_time = self._timer.finish()
+        return
 
-    __Timer.end()
-    methods_run_information['iterations']['StoppingCompletePathMonteCarloMethod'] = iterations
-    return stat_vector
-
-
-def RandomStartStoppingCompletePathMonteCarloMethod(tlist, d=0.85, order="linear", iterations=1):
-    pages_number = tlist._pages_number
-    if order == "linear":
-        N = pages_number
-    elif order == "square":
-        N = pages_number ** 2
-    else:
-        raise ValueError("Wrong order parameter")
-
-    __Timer.start("RandomStartStoppingCompletePathMonteCarloMethod")
-
-    stat_vector = [0 for i in range(pages_number)]
-
-    for i in range(N * iterations):
-        start_page = random.randint(0, pages_number - 1)
-        _stopping_simulate_complete_run(tlist, stat_vector, start_page, d)
-
-    __Timer.end()
-    methods_run_information['iterations']['RandomStartStoppingCompletePathMonteCarloMethod'] = iterations
-    return stat_vector
+    def stopping_run(self, precision=0.01, m=3):
+        raise Exception("No available implementation")
+        return
 
 
-def CompleteFunction():
-    pass
+class RandomStartStoppingCompletePathMonteCarloMethod:
+    _timer = Timer()
+    _iterating_run_time = None
+    _stopping_run_time = None
+
+    def __init__(self, tlist, d=0.85):
+        self._d = d
+        pages_number = len(tlist)
+        self._matrix = tlist
+        self._stat_vector = [0 for i in range(pages_number)]
+        return
+
+    def _iteration(self):
+        pages_number = len(self._matrix)
+        for i in range(self._N):
+            start_page = random.randint(0, pages_number - 1)
+            _stopping_simulate_complete_run(self._matrix, self._stat_vector, start_page, self._d)
+        return
+
+    def iterating_run(self, iterations, order="linear"):
+        pages_number = len(self._matrix)
+        if order == "linear":
+            self._N = pages_number
+        elif order == "square":
+            self._N = pages_number ** 2
+        else:
+            raise ValueError("Wrong order parameter")
+
+        self._timer.start()
+        for i in range(iterations):
+            self._iteration()
+        self._srun_iteraions = iterations
+        self._iterating_run_time = self._timer.finish()
+        return
+
+    def stopping_run(self, precision=0.01, order="linear"):
+        raise Exception("No available implementation")
+        return

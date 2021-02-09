@@ -7,4 +7,3 @@ import random
 
 
 t.CompleteTest()
-exit(0)
