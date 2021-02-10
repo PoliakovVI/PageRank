@@ -1,6 +1,5 @@
-from PageRank import TransitionMatrix, Generators, ComputingMethods
+from PageRank import TransitionMatrix, Generators, ComputingMethods, _create_html_table
 import time
-
 
 __LEVEL_TEST_FILE = "PageRank/_tests/level_test.txt"
 
@@ -38,7 +37,7 @@ def __get_worked_method_object(file, method, method_opts={}):
         data = tm
     elif method_type == "tl":
         data = TransitionMatrix.TransitionList(tm)
-    elif method_type =="tpm":
+    elif method_type == "tpm":
         data = TransitionMatrix.TransitionProbabilityMatrix(tm)
     else:
         raise Exception("Unknown method")
@@ -74,8 +73,8 @@ def positionTest(result, true_result):
     true_pages = __get_sort_pages(true_result)
 
     ################
-    #for i in range(len(true_pages)):
-        #print(true_pages[i], "<->", result_pages[i])
+    # for i in range(len(true_pages)):
+    # print(true_pages[i], "<->", result_pages[i])
 
     pages_number = len(result)
     errors = 0
@@ -163,7 +162,7 @@ def distanceTest(result, true_result):
     for i in range(len(true_pages)):
         item = true_pages[i]
         j = 0
-        while(item != result_pages[j]):
+        while (item != result_pages[j]):
             j += 1
 
         sum_distance += abs(i - j)
@@ -200,6 +199,7 @@ def topTest(result, true_result, top=None):
 
 
 def ComparingTest(result, baseline_result):
+    raise Exception("No available update")
     pt_res = positionTest(result, baseline_result)
     st_res = sequenceTest(result, baseline_result)
     vt_res = vectorTest(result, baseline_result)
@@ -213,15 +213,32 @@ def ComparingTest(result, baseline_result):
     print()
 
 
+def print_percentage_bar(done, all, end="", lenght=20):
+    percentage_symbols = done * lenght // all
+    percentage_done = int(done / all * 100)
+    out = "\r" + "|" + "#" * percentage_symbols + " " * (lenght - percentage_symbols) + \
+          "| " + str(percentage_done) + "% done    "
+    print(out, end=end)
+
+
 def CompleteTest():
+    test_matrix = []
+    current_row = 0
+    total_row_number = len(__methods) * (1 + len(__true_tests) * 5)
+    print("Start complete test:")
+
     for method in __methods:
-        print("========== {} testing ==========".format(method.__name__))
 
         test_number = 0
         lt_res = levelTest(method)
-        print("    Level test: {:.2f}%".format(lt_res * 100))
+
+        test_matrix.append([method.__name__, "Level test", "#<", str(lt_res)])
+        current_row += 1
 
         for file in __true_tests:
+            # percentage drawing
+            print_percentage_bar(current_row, total_row_number)
+
             test_number += 1
 
             true_file = "PageRank/_tests/true_" + file
@@ -230,10 +247,11 @@ def CompleteTest():
             with open(true_file, "r") as f:
                 true_result = list(map(float, f.readline().split()))
 
-            pt_res = positionTest(method_object._stat_vector, true_result)
-            st_res = sequenceTest(method_object._stat_vector, true_result)
-            vt_res = vectorTest(method_object._stat_vector, true_result)
-            dt_res = distanceTest(method_object._stat_vector, true_result)
+            t_res = {}
+            t_res["Position test"] = positionTest(method_object._stat_vector, true_result)
+            t_res["Sequence test"] = sequenceTest(method_object._stat_vector, true_result)
+            t_res["Vector test"] = vectorTest(method_object._stat_vector, true_result)
+            t_res["Distance test"] = distanceTest(method_object._stat_vector, true_result)
             tt_res = topTest(method_object._stat_vector, true_result, top=5)
 
             if method_object._stopping_run_time is not None:
@@ -241,11 +259,16 @@ def CompleteTest():
             else:
                 all_time = method_object._iterating_run_time
 
-            print("Test number {}:".format(test_number))
-            print("    Position test: {:.2f}%".format(pt_res * 100))
-            print("    Sequence test: {:.2f}%".format(st_res * 100))
-            print("    Vector test: {:.3f}".format(vt_res))
-            print("    Distance test: {:.2f}".format(dt_res))
-            print("    Top test: {}".format(tt_res))
-            print("  method worked:", all_time)
-            print()
+            test_matrix.append(["#^", "Test " + str(test_number), "Top test", tt_res])
+            current_row += 1
+
+            for key in t_res:
+                test_matrix.append(["#^", "#^", key, t_res[key]])
+                current_row += 1
+
+    html_report_file = "CompleteTestResults.html"
+    table = _create_html_table.Table(test_matrix)
+    table.writeHtml(html_report_file)
+
+    print_percentage_bar(current_row, total_row_number, end="\n")
+    print("Check out", html_report_file)
