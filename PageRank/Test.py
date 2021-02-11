@@ -198,6 +198,24 @@ def topTest(result, true_result, top=None):
     return test
 
 
+def KendallCorrelationTest(result, true_result):
+    # http://www.machinelearning.ru/wiki/index.php?title=%D0%9A%D0%BE%D1%8D%D1%84%D1%84%D0%B8%D1%86%D0%B8%D0%B5%D0%BD%D1%82_%D0%BA%D0%BE%D1%80%D1%80%D0%B5%D0%BB%D1%8F%D1%86%D0%B8%D0%B8_%D0%9A%D0%B5%D0%BD%D0%B4%D0%B5%D0%BB%D0%BB%D0%B0#:~:text=%D0%9A%D0%BE%D1%8D%D1%84%D1%84%D0%B8%D1%86%D0%B8%D0%B5%D0%BD%D1%82%20%D0%BA%D0%BE%D1%80%D1%80%D0%B5%D0%BB%D1%8F%D1%86%D0%B8%D0%B8%20%D0%9A%D0%B5%D0%BD%D0%B4%D0%B5%D0%BB%D0%BB%D0%B0%20(Kendall%20tau,%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%B8%D1%8F%2C%20%D0%B0%20%D1%81%D0%BE%D0%BE%D1%82%D0%B2%D0%B5%D1%82%D1%81%D1%82%D0%B2%D1%83%D1%8E%D1%89%D0%B8%D0%B5%20%D0%B8%D0%BC%20%D1%80%D0%B0%D0%BD%D0%B3%D0%B8.
+    n = len(result)
+    x = result
+    y = true_result
+
+    R = 0
+    for i in range(1, n-1):
+        for j in range(i+1, n):
+            xi_less_xj = x[i] < x[j]
+            yi_less_yj = y[i] < y[j]
+            if xi_less_xj != yi_less_yj:
+                R += 1
+
+    return 1 - 4 * R / (n * (n - 1))
+
+
+
 def ComparingTest(result, baseline_result):
     raise Exception("No available update")
     pt_res = positionTest(result, baseline_result)
@@ -224,7 +242,7 @@ def print_percentage_bar(done, all, end="", lenght=20):
 def CompleteTest():
     test_matrix = []
     current_row = 0
-    total_row_number = len(__methods) * (1 + len(__true_tests) * 5)
+    total_row_number = len(__methods) * (1 + len(__true_tests) * 6)
     print("Start complete test:")
 
     for method in __methods:
@@ -252,6 +270,8 @@ def CompleteTest():
             t_res["Sequence test"] = sequenceTest(method_object._stat_vector, true_result)
             t_res["Vector test"] = vectorTest(method_object._stat_vector, true_result)
             t_res["Distance test"] = distanceTest(method_object._stat_vector, true_result)
+            t_res["Kendall test"] = KendallCorrelationTest(method_object._stat_vector, true_result)
+
             tt_res = topTest(method_object._stat_vector, true_result, top=5)
 
             if method_object._stopping_run_time is not None:
