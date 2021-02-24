@@ -152,9 +152,13 @@ def _compute_pi_vector(vectors_stack):
     vectors_stack = []
 
     for i in range(length):
-        top = (pik1[i] - pik0[i]) ** 2
-        bot = pik2[i] - 2 * pik1[i] - pik0[i]
-        pi_vector.append(pik2[i] - top / bot)
+        try:
+            top = (pik1[i] - pik0[i]) ** 2
+            bot = pik2[i] - 2 * pik1[i] - pik0[i]
+            pi_vector.append(pik0[i] - top / bot)
+        except ZeroDivisionError:
+            pi_vector = pik2
+            break
 
     return pi_vector
 
@@ -299,6 +303,7 @@ class EndpointRandomStartMonteCarloMethod:
     _timer = Timer()
     _iterating_run_time = None
     _stopping_run_time = None
+    _stat_vector = None
 
     def __init__(self, tlist, d=0.85):
         self._d = d
@@ -339,6 +344,7 @@ class EndpointCyclicStartMonteCarloMethod:
     _timer = Timer()
     _iterating_run_time = None
     _stopping_run_time = None
+    _stat_vector = None
 
     def __init__(self, tlist, d=0.85):
         self._d = d
@@ -387,6 +393,7 @@ class CompletePathMonteCarloMethod:
     _timer = Timer()
     _iterating_run_time = None
     _stopping_run_time = None
+    _stat_vector = None
 
     def __init__(self, tlist, d=0.85):
         self._d = d
@@ -436,6 +443,7 @@ class StoppingCompletePathMonteCarloMethod:
     _timer = Timer()
     _iterating_run_time = None
     _stopping_run_time = None
+    _stat_vector = None
 
     def __init__(self, tlist, d=0.85):
         self._d = d
@@ -469,6 +477,7 @@ class RandomStartStoppingCompletePathMonteCarloMethod:
     _timer = Timer()
     _iterating_run_time = None
     _stopping_run_time = None
+    _stat_vector = None
 
     def __init__(self, tlist, d=0.85):
         self._d = d

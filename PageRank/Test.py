@@ -201,8 +201,8 @@ def topTest(result, true_result, top=None):
 def KendallCorrelationTest(result, true_result):
     # http://www.machinelearning.ru/wiki/index.php?title=%D0%9A%D0%BE%D1%8D%D1%84%D1%84%D0%B8%D1%86%D0%B8%D0%B5%D0%BD%D1%82_%D0%BA%D0%BE%D1%80%D1%80%D0%B5%D0%BB%D1%8F%D1%86%D0%B8%D0%B8_%D0%9A%D0%B5%D0%BD%D0%B4%D0%B5%D0%BB%D0%BB%D0%B0#:~:text=%D0%9A%D0%BE%D1%8D%D1%84%D1%84%D0%B8%D1%86%D0%B8%D0%B5%D0%BD%D1%82%20%D0%BA%D0%BE%D1%80%D1%80%D0%B5%D0%BB%D1%8F%D1%86%D0%B8%D0%B8%20%D0%9A%D0%B5%D0%BD%D0%B4%D0%B5%D0%BB%D0%BB%D0%B0%20(Kendall%20tau,%D0%B7%D0%BD%D0%B0%D1%87%D0%B5%D0%BD%D0%B8%D1%8F%2C%20%D0%B0%20%D1%81%D0%BE%D0%BE%D1%82%D0%B2%D0%B5%D1%82%D1%81%D1%82%D0%B2%D1%83%D1%8E%D1%89%D0%B8%D0%B5%20%D0%B8%D0%BC%20%D1%80%D0%B0%D0%BD%D0%B3%D0%B8.
     n = len(result)
-    x = result
-    y = true_result
+    x = __normalize(result)
+    y = __normalize(true_result)
 
     R = 0
     for i in range(1, n-1):
@@ -292,3 +292,33 @@ def CompleteTest():
 
     print_percentage_bar(current_row, total_row_number, end="\n")
     print("Check out", html_report_file)
+
+
+def CompleteTimeTest(file, prev_ctt_data=None):
+    print("CompleteTimeTest:", file)
+
+    if prev_ctt_data is None:
+        data = {}
+        for method in __methods:
+            data[method.__name__] = []
+    else:
+        data = prev_ctt_data
+
+    current_method_id = 0
+    total_methods_number = len(__methods)
+    for method in __methods:
+        print_percentage_bar(current_method_id, total_methods_number)
+
+        method_object = __get_worked_method_object(file, method)
+
+        if method_object._stopping_run_time is not None:
+            all_time = method_object._stopping_run_time
+        else:
+            all_time = method_object._iterating_run_time
+
+        data[method.__name__].append(all_time)
+
+        current_method_id += 1
+
+    print_percentage_bar(current_method_id, total_methods_number, end="\n")
+    return data

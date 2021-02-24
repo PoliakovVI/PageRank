@@ -40,6 +40,7 @@ def TreeGenerator(output="return", levels=3, print_res=False, sep=';'):
         return tlist
     else:
         with open(output, "w") as file:
+            number_of_links = 0
             id = 0
             for row in tlist:
                 id += 1
@@ -49,11 +50,27 @@ def TreeGenerator(output="return", levels=3, print_res=False, sep=';'):
                 line = ""
                 current_position = 0
                 for item in row:
+                    number_of_links += 1
                     line += "0;" * (item - current_position) + "1;"
                     current_position = item + 1
                 line += "0;" * (pages_number - current_position)
 
                 file.write(line[0:-1] + "\n")
+
+            generators_information["SeparatedLevelsTreeGenerator"]["links number"] = number_of_links
+
+
+
+def generate_tg_files(startnum, endnum, outdir="PageRank/pregenerated_structs/"):
+    outfile = outdir + "level{}.txt"
+    pages_links_numbers = []
+    for levels in range(startnum, endnum):
+        TreeGenerator(levels=levels, output=outfile.format(levels))
+        generated = generators_information["SeparatedLevelsTreeGenerator"]["pages number"]
+        links_number = generators_information["SeparatedLevelsTreeGenerator"]["links number"]
+        print("level: {} gen: {} links: {}".format(levels, generated, links_number))
+        pages_links_numbers.append((generated, links_number))
+    return pages_links_numbers
 
 
 def get_connected_level(pages_number, min_number):
