@@ -3,6 +3,133 @@ import random
 
 generators_information = {}
 
+class _page:
+    number = None
+    outgoing_links = []
+    rang = None
+    _in_sum = 0
+    in_links_num = 0
+
+    def __init__(self, number, pages=[], d=0.85):
+        self.number = number
+        self.d = d
+        self.outgoing_links = pages[:]
+        self._in_sum = 0
+        self.rang = 0
+        self._recompute_rang()
+
+    def _recompute_rang(self):
+        self._old_rang = self.rang
+        self.rang = 1 - self.d + self.d * self._in_sum
+        links_number = len(self.outgoing_links)
+
+        for page in self.outgoing_links:
+            page.recompute_sum(self._old_rang / links_number, self.rang / links_number)
+
+    def recompute_sum(self, prev_value, new_value):
+        if prev_value == 0:
+            self.in_links_num += 1
+        self._in_sum = self._in_sum - prev_value + new_value
+        self._recompute_rang()
+
+    def get_rang(self):
+        return self.rang
+
+    def get_number(self):
+        return self.number
+
+    def get_in_links_num(self):
+        return self.in_links_num
+
+    def get_as_matrix_string(self, length):
+        out_str = ""
+        numbers = set()
+        for page in self.outgoing_links:
+            numbers.add(page.get_number())
+
+        numbers = sorted(list(numbers))
+        for i in range(len(numbers)):
+            for j in range(i+1, len(numbers)):
+                numbers[j] -= (numbers[i] + 1)
+
+        #
+        #print()
+        #print("num:", self.number)
+        #
+        #
+        #print("list:", numbers)
+        #
+        for next_num in numbers:
+            #
+            #print("len:", length)
+            #
+            out_str += "0;" * next_num + "1;"
+            #
+            #print("out:", out_str)
+            #
+            length -= next_num + 1
+        out_str += "0;" * length
+        return out_str[0:-1]
+
+    def __str__(self):
+        links = ""
+        for page in self.outgoing_links:
+            links += str(page.get_number()) + " "
+        return str(self.number) + ": " + str(self.rang) + " ( " + links + ") in: " + str(self.in_links_num)
+
+
+def BAmodel(vertices_number, file_out, filepath=""):
+    page0 = _page(0)
+    page1 = _page(1, pages=[page0, ])
+    page2 = _page(2, pages=[page0, page1])
+    pages = [page0, page1, page2]
+
+    out_links_number = 6  # with self-reference
+
+    for i in range(vertices_number - 3):
+
+        # getting different links
+        current_page_links_number = random.randint(1, 3)
+        current_page_links = set()
+
+        for j in range(current_page_links_number):
+            linked_page = random.randint(0, out_links_number - 1) # [a, b]
+
+            # page number defenition
+            id = 0
+            while True:
+                current_in_links_num = pages[id].get_in_links_num()
+                if current_in_links_num >= linked_page:
+                    break
+                else:
+                    linked_page -= (current_in_links_num + 1)  # with self-reference
+                    id += 1
+
+            while id in current_page_links:
+                id = (id + 1) % len(pages)
+
+            current_page_links.add(id)
+
+        out_links_number += 1 + current_page_links_number
+
+        # forming _page input
+        linked_pages = []
+        for number in current_page_links:
+            linked_pages.append(pages[number])
+
+        # adding new page
+        pages.append(_page(i+3, pages=linked_pages))
+
+    with open(filepath+file_out, "w") as file:
+        for page in pages:
+            file.write(page.get_as_matrix_string(len(pages)) + "\n")
+
+    with open(filepath+"true_"+file_out, "w") as file:
+        out_str = ""
+        for page in pages:
+            out_str += str(page.get_rang()) + " "
+        file.write(out_str)
+
 
 def TreeGenerator(output="return", levels=3, print_res=False, sep=';'):
     prev_pages_number = 2

@@ -239,10 +239,22 @@ def print_percentage_bar(done, all, end="", lenght=20):
     print(out, end=end)
 
 
-def CompleteTest():
+def CompleteTest(test_files=None):
+
+    if test_files is None:
+        tests_path = "PageRank/_tests/"
+        true_tests = __true_tests
+
+        # getting test 4 with BA model
+        Generators.BAmodel(500, "test4.txt", tests_path)
+        true_tests.append("test4.txt")
+    else:
+        true_tests = test_files
+        tests_path = ""
+
     test_matrix = []
     current_row = 0
-    total_row_number = len(__methods) * (1 + len(__true_tests) * 6)
+    total_row_number = len(__methods) * (1 + len(true_tests) * 6)
     print("Start complete test:")
 
     for method in __methods:
@@ -253,14 +265,14 @@ def CompleteTest():
         test_matrix.append([method.__name__, "Level test", "#<", str(lt_res)])
         current_row += 1
 
-        for file in __true_tests:
+        for file in true_tests:
             # percentage drawing
             print_percentage_bar(current_row, total_row_number)
 
             test_number += 1
 
-            true_file = "PageRank/_tests/true_" + file
-            file = "PageRank/_tests/" + file
+            true_file = tests_path + "true_" + file
+            file = tests_path + file
             method_object = __get_worked_method_object(file, method)
             with open(true_file, "r") as f:
                 true_result = list(map(float, f.readline().split()))
@@ -322,3 +334,67 @@ def CompleteTimeTest(file, prev_ctt_data=None):
 
     print_percentage_bar(current_method_id, total_methods_number, end="\n")
     return data
+
+
+def topTestNumber(result, true_result, top=5):
+    result = topTest(result, true_result, top=top)
+    return sum(result) / len(result)
+
+
+def AccurasyOverTime(metric_algorithm, time_list=[0.3, 0.6, 1]):
+
+    methods = [
+        ComputingMethods.MarkovChain,
+        ComputingMethods.PowerMethod,
+        ComputingMethods.AdaptivePowerMethod,
+        ComputingMethods.EndpointRandomStartMonteCarloMethod,
+        ComputingMethods.EndpointCyclicStartMonteCarloMethod,
+        ComputingMethods.CompletePathMonteCarloMethod,
+        ComputingMethods.StoppingCompletePathMonteCarloMethod,
+        ComputingMethods.RandomStartStoppingCompletePathMonteCarloMethod,
+    ]
+
+    out_data = dict()
+
+    # getting test 4 with BA model
+    #Generators.BAmodel(500, "test4.txt", "PageRank/_tests/")
+    #true_tests.append("test4.txt")
+
+    test_file = "PageRank/_tests/test4.txt"
+    true_test_file = "PageRank/_tests/true_test4.txt"
+
+    true_result = list(map(float, open(true_test_file).readline().split()))
+
+    for method in methods:
+        print(method.__name__)
+        method_results = []
+        method_time = []
+        for time in time_list:
+
+            tm = TransitionMatrix.TransitionMatrix()
+            tm.read_from_txt(test_file)
+            method_type = __methods_data[method.__name__]
+
+            # matrix class definition
+            if method_type == "tm":
+                data = tm
+            elif method_type == "tl":
+                data = TransitionMatrix.TransitionList(tm)
+            elif method_type == "tpm":
+                data = TransitionMatrix.TransitionProbabilityMatrix(tm)
+            else:
+                raise Exception("Unknown method")
+
+            method_object = method(data)
+            all_time = 0
+
+            while all_time < time:
+                method_object.iterating_run(1)
+                all_time += method_object._iterating_run_time
+
+            method_time.append(all_time)
+            method_results.append(metric_algorithm(method_object._stat_vector, true_result))
+        out_data[method.__name__] = dict()
+        out_data[method.__name__]["time"] = method_time
+        out_data[method.__name__]["result"] = method_results
+    return out_data

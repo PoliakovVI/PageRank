@@ -6,6 +6,9 @@ import time
 import random
 
 
+print(t.AccurasyOverTime(t.KendallCorrelationTest))
+exit(0)
+
 t.CompleteTest()
 exit(0)
 
