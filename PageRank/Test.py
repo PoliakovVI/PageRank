@@ -215,22 +215,6 @@ def KendallCorrelationTest(result, true_result):
     return 1 - 4 * R / (n * (n - 1))
 
 
-
-def ComparingTest(result, baseline_result):
-    raise Exception("No available update")
-    pt_res = positionTest(result, baseline_result)
-    st_res = sequenceTest(result, baseline_result)
-    vt_res = vectorTest(result, baseline_result)
-    dt_res = distanceTest(result, baseline_result)
-
-    print("Comparing test:")
-    print("    Position test: {:.2f}%".format(pt_res * 100))
-    print("    Sequence test: {:.2f}%".format(st_res * 100))
-    print("    Vector test: {:.3f}".format(vt_res))
-    print("    Distance test: {:.2f}".format(dt_res))
-    print()
-
-
 def print_percentage_bar(done, all, end="", lenght=20):
     percentage_symbols = done * lenght // all
     percentage_done = int(done / all * 100)
@@ -357,8 +341,7 @@ def AccurasyOverTime(metric_algorithm, time_list=[0.3, 0.6, 1]):
     out_data = dict()
 
     # getting test 4 with BA model
-    #Generators.BAmodel(500, "test4.txt", "PageRank/_tests/")
-    #true_tests.append("test4.txt")
+    Generators.BAmodel(500, "test4.txt", "PageRank/_tests/")
 
     test_file = "PageRank/_tests/test4.txt"
     true_test_file = "PageRank/_tests/true_test4.txt"
