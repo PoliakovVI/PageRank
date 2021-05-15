@@ -6,10 +6,14 @@ import time
 import random
 
 
-print(t.AccurasyOverTime(t.KendallCorrelationTest))
+tm = tx.TransitionMatrix()
+tm.read_from_txt("testfile.txt")
+method_object = md.PowerMethod(tm)
+method_object.stopping_run(0.0001)
+print(method_object._stat_vector)
 exit(0)
 
-t.CompleteTest()
+gen.BAmodel(10, "file.txt")
 exit(0)
 
 start_level = 4
