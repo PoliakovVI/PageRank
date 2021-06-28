@@ -78,6 +78,60 @@ class _page:
         return str(self.number) + ": " + str(self.rang) + " ( " + links + ") in: " + str(self.in_links_num)
 
 
+def LCDmodel(vertices_number, file_out, filepath=""):
+    N = vertices_number * 2
+    points = [None for i in range(N)]
+
+    # creating curves
+    for i in range(vertices_number):
+        first = random.randint(0, N-1)
+        while points[first] != None:
+            first = (first + 1) % N
+
+        second = random.randint(0, N-1)
+        while first == second or points[second] != None:
+            second = (second + 1) % N
+
+        if first < second:
+            points[first] = second
+            points[second] = -first
+        else:
+            points[first] = -second
+            points[second] = first
+
+    # making pages
+    total_index = 0
+    current_vertex = 0
+    pages = list()
+    for i in range(vertices_number):
+        linked_pages = []
+        while points[total_index] > 0:
+            points[total_index] = current_vertex
+            total_index += 1
+
+        page_index = points[abs(points[total_index])]
+        if page_index != current_vertex:
+            linked_pages = [ pages[page_index] ]
+
+
+        points[total_index] = current_vertex
+        pages.append(_page(current_vertex, pages=linked_pages))
+
+        total_index += 1
+        current_vertex += 1
+
+    with open(filepath+file_out, "w") as file:
+        for page in pages:
+            file.write(page.get_as_matrix_string(len(pages)) + "\n")
+
+    with open(filepath+"true_"+file_out, "w") as file:
+        out_str = ""
+        for page in pages:
+            out_str += str(page.get_rang()) + " "
+        file.write(out_str)
+
+
+
 def BAmodel(vertices_number, file_out, filepath=""):
     page0 = _page(0)
     page1 = _page(1, pages=[page0, ])
@@ -185,7 +239,6 @@ def TreeGenerator(output="return", levels=3, print_res=False, sep=';'):
                 file.write(line[0:-1] + "\n")
 
             generators_information["SeparatedLevelsTreeGenerator"]["links number"] = number_of_links
-
 
 
 def generate_tg_files(startnum, endnum, outdir="PageRank/pregenerated_structs/"):
